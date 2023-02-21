@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, PermissionsMixin, BaseUserManager
+from src.core.abstract_field import BaseModel
+from src.core.enums import GenderTypes
+from src.message_control.models import GenericFileUpload
 
 
 class CustomUserManager(BaseUserManager):
@@ -27,13 +30,10 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
 
 
-class CustomUser(AbstractUser, PermissionsMixin):
+class CustomUser(AbstractUser, BaseModel, PermissionsMixin):
     username = models.EmailField(unique=True, max_length=255, verbose_name='Username')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     is_staff = models.BooleanField(default=False, verbose_name='Staff status')
     is_superuser = models.BooleanField(default=False, verbose_name='Superuser status')
-    is_active = models.BooleanField(default=True, verbose_name='Active status')
 
     USERNAME_FIELD = 'username'
     objects = CustomUserManager()
@@ -41,12 +41,48 @@ class CustomUser(AbstractUser, PermissionsMixin):
     def __str__(self):
         return self.username
 
+    class Meta:
+        db_table = 'user_control_customer'
+        verbose_name = 'Customer'
+        verbose_name_plural = 'Customers'
+        ordering = ['id']
 
-class Jwt(models.Model):
-    user = models.OneToOneField(
-        CustomUser, on_delete=models.CASCADE, related_name='login_user'
+
+class UserProfile(BaseModel):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='user_profile')
+    first_name = models.CharField(max_length=255, verbose_name='User first name')
+    last_name = models.CharField(max_length=255, verbose_name='User last name')
+    avatar = models.ForeignKey(
+        GenericFileUpload,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='user_avatar',
+        verbose_name='User avatar'
     )
+    birthday = models.DateField()
+    gender = models.CharField(choices=GenderTypes.choices(), max_length=6, verbose_name='User gender')
+    phone = models.CharField(max_length=32, null=True, blank=True, verbose_name='User phone')
+    address = models.CharField(max_length=255, null=True, blank=True, verbose_name='User address')
+    number = models.CharField(max_length=32, null=True, blank=True, verbose_name='User address number')
+    city = models.CharField(max_length=50, null=True, blank=True, verbose_name='User city')
+    country = models.CharField(max_length=255, null=True, blank=True, verbose_name='User country')
+
+    def __str__(self):
+        return self.user.username
+
+    class Meta:
+        db_table = 'user_control_user_profile'
+        verbose_name = 'User profile'
+        verbose_name_plural = 'User profiles'
+        ordering = ['id']
+
+
+class Jwt(BaseModel):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='login_user')
     access = models.TextField()
     refresh = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'user_control_jwt'
+        verbose_name = 'Jwt'
+        ordering = ['id']

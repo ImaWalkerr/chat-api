@@ -1,7 +1,11 @@
 import os
-import django
-django.setup()
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+import django
+from django.conf import settings
+
+if not settings.configured:
+    django.setup()
 
 from rest_framework.test import APITestCase
 from src.user_control.views import get_random, get_access_token, get_refresh_token

@@ -5,11 +5,18 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth import authenticate
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from src.user_control.authentication import Authentication
 from src.user_control.models import CustomUser, Jwt
-from src.user_control.serializers import LoginSerializer, RegisterSerializer, RefreshSerializer
+from src.user_control.serializers import (
+    LoginSerializer,
+    RegisterSerializer,
+    RefreshSerializer,
+    UserProfileSerializer,
+    UserProfile,
+)
 
 
 def get_random(length):
@@ -93,3 +100,9 @@ class RefreshView(APIView):
         active_jwt.save()
 
         return Response({'access': access, 'refresh': refresh})
+
+
+class UserProfileView(ModelViewSet):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = (IsAuthenticated, )
