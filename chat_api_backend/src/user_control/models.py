@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, PermissionsMixin, BaseUserManager
+from django.utils import timezone
 from src.core.abstract_field import BaseModel
 from src.core.enums import GenderTypes
 from src.message_control.models import GenericFileUpload
@@ -34,6 +35,7 @@ class CustomUser(AbstractUser, BaseModel, PermissionsMixin):
     username = models.EmailField(unique=True, max_length=255, verbose_name='Username')
     is_staff = models.BooleanField(default=False, verbose_name='Staff status')
     is_superuser = models.BooleanField(default=False, verbose_name='Superuser status')
+    is_online = models.DateTimeField(default=timezone.now, verbose_name='Online status')
 
     USERNAME_FIELD = 'username'
     objects = CustomUserManager()

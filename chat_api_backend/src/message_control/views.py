@@ -1,6 +1,11 @@
+import json
+
+import requests
+from django.conf import settings
+from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
+from src.core.permissions import IsAuthenticatedCustom
 from src.message_control.serializers import (
     GenericFileUpload,
     GenericFileUploadSerializer,
@@ -8,6 +13,20 @@ from src.message_control.serializers import (
     MessageAttachment,
     MessageSerializer,
 )
+
+
+def handleRequest(serializerData):
+    notification = {
+        'message': serializerData.data.get('message'),
+        'from': serializerData.data.get('sender'),
+        'receiver': serializerData.data.get('receiver').get('id')
+    }
+
+    headers = {
+        'Content-type': 'application/json',
+    }
+    requests.post(settings.SOCKET_SERVER, json.dumps(notification), headers=headers)
+    return True
 
 
 class GenericFileUploadView(ModelViewSet):
@@ -19,7 +38,17 @@ class MessageView(ModelViewSet):
     queryset = Message.objects.select_related(
         'sender', 'receiver').prefetch_related('message_attachments')
     serializer_class = MessageSerializer
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticatedCustom, )
+
+    def get_queryset(self):
+        data = self.request.query_params.dict()
+        user_id = data.get('user_id', None)
+
+        if user_id:
+            active_user_id = self.request.user.id
+            return self.queryset.filter(Q(sender_id=user_id, receiver_id=active_user_id) |
+                                        Q(sender_id=active_user_id, receiver_id=user_id)).distinct()
+        return self.queryset
 
     def create(self, request, *args, **kwargs):
 
@@ -40,6 +69,7 @@ class MessageView(ModelViewSet):
             message_data = self.get_queryset().get(id=serializer.data['id'])
             return Response(self.serializer_class(message_data).data, status=201)
 
+        handleRequest(serializer)
         return Response(serializer.data, status=201)
 
     def update(self, request, *args, **kwargs):
@@ -60,4 +90,5 @@ class MessageView(ModelViewSet):
             message_data = self.get_object()
             return Response(self.serializer_class(message_data).data, status=200)
 
+        handleRequest(serializer)
         return Response(serializer.data, status=200)
