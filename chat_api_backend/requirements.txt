@@ -4,6 +4,7 @@ charset-normalizer==3.0.1
 coreapi==2.3.3
 coreschema==0.0.4
 Django==4.1.7
+django-cors-headers==3.13.0
 django-storages==1.13.2
 django_debug_toolbar==3.8.1
 djangorestframework==3.14.0

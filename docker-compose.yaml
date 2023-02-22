@@ -1,0 +1,45 @@
+version: '3.7'
+
+services:
+  postgres_database:
+    image: postgres:14
+    container_name: chatapi_postgres
+    ports:
+      - "5432:5432"
+    env_file:
+      - chat_api_backend/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  django:
+    build: chat_api_backend
+    container_name: chatapi_backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/usr/chat_api_backend/
+    ports:
+      - "8000:8000"
+    env_file:
+      - chat_api_backend/.env
+    depends_on:
+      - postgres_database
+
+  socket:
+    build: chat_api_socket
+    container_name: chatapi_socket
+    command: npm start
+    restart: unless-stopped
+    volumes:
+      - .:/chatsocket
+      - /chat_api_socket/node_modules
+    ports:
+      - "2086:9000"
+    networks:
+      - postgres_database
+
+networks:
+  postgres_database:
+    driver: bridge
+
+volumes:
+  postgres_data:
